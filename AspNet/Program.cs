@@ -10,7 +10,7 @@ var configuration = builder.Configuration;
 
 // Read from environment variables
 var temporalAddress = configuration["TEMPORAL_ADDRESS"] ?? "localhost:7233";
-var temporalNamespace = configuration["TEMPORAL_NAMESPACE"];
+var temporalNamespace = configuration["TEMPORAL_NAMESPACE"] ?? "default";
 var temporalCertPath = configuration["TEMPORAL_CERT_PATH"];
 var temporalKeyPath = configuration["TEMPORAL_KEY_PATH"];
 
