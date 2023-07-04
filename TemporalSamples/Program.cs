@@ -110,17 +110,17 @@ AddClientCommand("execute-workflow", "Execute workflow", async (client, workflow
 });
 
 // Command to signal workflow
-AddClientCommand("signal-order-halt", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
-{
-    Console.WriteLine("Sending halt signal to workflow");
+// AddClientCommand("signal-order-halt", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
+// {
+//     Console.WriteLine("Sending halt signal to workflow");
 
-    var workflowId = ctx.ParseResult.GetValueForOption(workflowIdOption) ?? "";
-    Console.WriteLine(workflowId);
-    var handle = client.GetWorkflowHandle(workflowId);
+//     var workflowId = ctx.ParseResult.GetValueForOption(workflowIdOption) ?? "";
+//     Console.WriteLine(workflowId);
+//     var handle = client.GetWorkflowHandle(workflowId);
 
-    await handle.SignalAsync<MyWorkflow>(wf => wf.HaltSignal());
+//     await handle.SignalAsync<MyWorkflow>(wf => wf.HaltSignal());
 
-});
+// });
 
 // Command to signal workflow
 AddClientCommand("signal-suborder-dispatched", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
@@ -132,17 +132,6 @@ AddClientCommand("signal-suborder-dispatched", "Signal workflow", async (client,
     var handle = client.GetWorkflowHandle(workflowId);
 
     await handle.SignalAsync<SuborderChildWorkflow>(wf => wf.Dispatch());
-});
-
-AddClientCommand("signal-suborder-delivered", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
-{
-    Console.WriteLine("Sending dispatched signal to child workflow");
-
-    var workflowId = ctx.ParseResult.GetValueForOption(workflowIdOption) ?? "";
-    Console.WriteLine(workflowId);
-    var handle = client.GetWorkflowHandle(workflowId);
-
-    await handle.SignalAsync<SuborderChildWorkflow>(wf => wf.ConfirmDelivery());
 });
 
 // Add a new standalone command named 'scratch'

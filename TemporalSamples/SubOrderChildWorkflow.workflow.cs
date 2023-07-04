@@ -9,9 +9,9 @@ using System.Runtime.InteropServices;
 public class SuborderChildWorkflow
 {
     private SubOrder subOrder;
+    private string id = Workflow.Info.WorkflowID;
     private bool approved = false;
     private bool dispatched = false;
-    private bool delivered = false;
     private bool rollback = false;
     private string status = "RECEIVED";
     private List<string> statusCompensation = new List<string>();
@@ -29,17 +29,13 @@ public class SuborderChildWorkflow
         foreach (var item in subOrder.Items)
         {
             await Workflow.DelayAsync(TimeSpan.FromSeconds(2));
-            Console.WriteLine($"Picked item {item.ProductName}");
+            Console.WriteLine($"{id}: Picked item {item.ProductName}");
         }
-        Console.WriteLine("All items picked");
-
-        // todo block on this and have business logic
-        //var waitApproved = Workflow.WaitConditionAsync(() => this.approved);
+        Console.WriteLine($"{id}: All items picked: Waiting for dispatch");
 
         var waitDispatch = Workflow.WaitConditionAsync(() => dispatched, TimeSpan.FromSeconds(30));
 
         var completedTask = await Task.WhenAny(waitDispatch, waitRollback);
-        Console.WriteLine("Waiting for dispatch");
         if (completedTask == waitDispatch)
         {
             if (await waitDispatch)
@@ -48,28 +44,18 @@ public class SuborderChildWorkflow
             }
             else
             {
-                throwApplicationError("TIMEOUT REACHED WHILE WAITING FOR DISPATCH");
-                return "ROLLBACK";
+                ThrowApplicationErrorAndRollback("TIMEOUT REACHED WHILE WAITING FOR DISPATCH");
             }
         }
         else if (completedTask == waitRollback)
         {
             RunRollback();
-            throwApplicationError("Rollback Requested");
-            return "ROLLBACK";
+            ThrowApplicationErrorAndRollback("Rollback Requested");
         }
 
-        // Wait for signal or timeout in 30 seconds
-        Console.WriteLine("Waiting for delivery confirmation");
-        if (await Workflow.WaitConditionAsync(() => delivered, TimeSpan.FromSeconds(60)))
-        {
-            SetStatus("DELIVERED");
-        }
-        else
-        {
-            throwApplicationError("TIMEOUT REACHED WHILE WAITING FOR DELIVERY CONFIRMATION");
-            return "ROLLBACK";
-        }
+        // Delay by 30 seconds to simulate delivery
+        await Workflow.DelayAsync(TimeSpan.FromSeconds(30));
+        SetStatus("DELIVERED");
 
         return status;
     }
@@ -77,29 +63,22 @@ public class SuborderChildWorkflow
     [WorkflowSignal]
     public async Task OrderApprove()
     {
-        Console.WriteLine("Order Approve Signal Received");
+        Console.WriteLine($"{id}: Order Approve Signal Received");
         this.approved = true;
     }
 
     [WorkflowSignal]
     public async Task OrderDeny()
     {
-        Console.WriteLine("Order Deny Signal Received");
+        Console.WriteLine($"{id}: Order Deny Signal Received");
         this.approved = false;
     }
 
     [WorkflowSignal]
     public async Task Dispatch()
     {
-        Console.WriteLine("Order Dispatched Signal Received");
+        Console.WriteLine($"{id}: Order Dispatched Signal Received");
         this.dispatched = true;
-    }
-
-    [WorkflowSignal]
-    public async Task ConfirmDelivery()
-    {
-        Console.WriteLine("Order Delivered Signal Received");
-        this.delivered = true;
     }
 
     [WorkflowQuery]
@@ -117,13 +96,22 @@ public class SuborderChildWorkflow
     [WorkflowSignal]
     public async Task Rollback()
     {
-        Console.WriteLine("got halt signal, cancelling/compensating child workflows");
+        if(status == "ROLLBACK")
+        {
+            Console.WriteLine($"{id}: Already in rollback state, ignoring signal");
+            return;
+        }
+        else if(status != "RECEIVED" || status != "PICKING") {
+            Console.WriteLine($"{id}: Can't rollback from status {status}");
+            return;
+        }
+        Console.WriteLine($"{id}: Got rollback signal, cancelling/compensating this suborder");
         this.rollback = true;
     }
 
     private string SetStatus(string newStatus)
     {
-        Console.WriteLine($"Setting status to {newStatus}");
+        Console.WriteLine($"{id}: Setting status to {newStatus}");
         status = newStatus;
         statusCompensation.Add(newStatus);
         return status;
@@ -134,14 +122,15 @@ public class SuborderChildWorkflow
         while (statusCompensation.Count > 0)
         {
             string status = statusCompensation[statusCompensation.Count - 1];
-            Console.WriteLine($"Rolling Back: {status}");
+            Console.WriteLine($"{id}: Rolling Back: {status}");
             statusCompensation.RemoveAt(statusCompensation.Count - 1);
         }
+        SetStatus("ROLLBACK");
     }
 
-    private void throwApplicationError(string message)
+    private void ThrowApplicationErrorAndRollback(string message)
     {
-        Console.WriteLine($"Throwing Application Error: {message}");
+        Console.WriteLine($"{id}: Throwing Application Error: {message}");
         RunRollback();
         throw new ApplicationFailureException(message);
     }

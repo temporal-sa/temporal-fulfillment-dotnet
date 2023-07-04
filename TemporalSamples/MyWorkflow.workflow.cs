@@ -26,7 +26,7 @@ public class MyWorkflow
         order = orderParam;
 
         // Run sub-order allocation
-        status = "ALLOCATING";
+        SetStatus("ALLOCATING");;
         var subOrderList = await Workflow.ExecuteActivityAsync(
             () => MyActivities.AllocateToStores(order),
             new()
@@ -36,7 +36,7 @@ public class MyWorkflow
 
 
         // Start 5 workflows
-        status = "STARTING SUBORDERS";
+        status = SetStatus("STARTING SUBORDERS");
 
         // so we can wait on them all later
         var suborderHandleTasks = new List<Task<string>>();
@@ -57,21 +57,21 @@ public class MyWorkflow
                     ID = childWorkflowId,
                 });
 
-            // Create a task that will complete when the workflow is done and return the ID and result together
+            // Create a task that will complete when the subworkflow
+            // is done and return the ID and result together
             var resultTask = handle.GetResultAsync().ContinueWith(t =>
                     {
-                        Console.WriteLine("Sub-order result is...");
                         // roll back the other suborders (signal) then throw failure
                         if (t.IsFaulted)
                         {
-                            Console.WriteLine(t.Exception.ToString());
+                            // Console.WriteLine(t.Exception.ToString());
                             subOrders[childWorkflowId].State = "FAILED";
                             requestCancel = true;
-                            return "FAILED";
+                            return SetStatus("FAILED");
                         }
                         else
                         {
-                            Console.WriteLine(t.Result);  // print the result
+                            // Console.WriteLine(t.Result);  // print the result
                             subOrders[childWorkflowId].State = t.Result;
                             return t.Result;
                         }
@@ -81,7 +81,7 @@ public class MyWorkflow
             // Add this task to the list of tasks to wait on
             suborderHandleTasks.Add(resultTask);
         }
-        status = "SUBORDERS STARTED";
+        status = SetStatus("SUBORDERS STARTED");
 
         // Wait for all workflows to complete and gather their results
         var childResultsTask = Task.WhenAll(suborderHandleTasks);
@@ -91,20 +91,18 @@ public class MyWorkflow
 
         if (finishedWorkflow == childResultsTask)
         {
-            status = "SUBORDERS COMPLETED";
             Console.WriteLine("Workflow completed");
-            return "COMPLETED";
+            return SetStatus("COMPLETED");
         }
         else
         {
             // TODO maybe remove, overcomplicated
             status = "CANCELLED";
-            Console.WriteLine("Workflow exiting due to halt = true");
-            // 
-            // send cancellations to children
+
+            // send rollbacks to children
             await RollbackSubOrders();
             await childResultsTask; // wait for workflows to rollback
-            return "ROLLBACK";
+            return SetStatus("ROLLBACK");
         }
 
     }
@@ -140,6 +138,13 @@ public class MyWorkflow
             }
         }
         return true;
+    }
+
+        private string SetStatus(string newStatus)
+    {
+        Console.WriteLine($"Setting status to {newStatus}");
+        status = newStatus;
+        return status;
     }
 
 }
