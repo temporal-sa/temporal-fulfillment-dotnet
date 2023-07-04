@@ -108,6 +108,7 @@ public class SuborderChildWorkflow
         return status;
     }
 
+    [WorkflowQuery]
     public string GetSubOrder()
     {
         return subOrder.ToJsonString();
