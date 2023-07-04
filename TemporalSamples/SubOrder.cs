@@ -17,6 +17,9 @@ public class SubOrder
     [JsonProperty("state")]
     public string State { get; set; }
 
+    [JsonProperty("subTotal")]
+    public decimal SubTotal { get; set; }
+
     public string ToJsonString()
     {
         return JsonConvert.SerializeObject(this, Formatting.Indented);

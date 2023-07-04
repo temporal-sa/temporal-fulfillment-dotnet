@@ -14,3 +14,5 @@ make sure I'm handling dicts and handle lists properly (don't dupe)
 make a big page of status for all, in svelte? api->svelte?
     good templating if I return pure json
     then maybe interactive if time
+
+TODO activities

@@ -49,7 +49,7 @@ public class MyWorkflow
             subOrders[childWorkflowId] = subOrder;
 
             // start suborders as child workflows (in parallel)
-            Console.WriteLine($"Starting workflow for suborder {childWorkflowId}");
+            Console.WriteLine($"Starting workflow for SubOrder -- {childWorkflowId}");
             var handle = await Workflow.StartChildWorkflowAsync(
                 (SuborderChildWorkflow wf) => wf.RunAsync(subOrder),
                 new()
@@ -96,9 +96,6 @@ public class MyWorkflow
         }
         else
         {
-            // TODO maybe remove, overcomplicated
-            status = "CANCELLED";
-
             // send rollbacks to children
             await RollbackSubOrders();
             await childResultsTask; // wait for workflows to rollback

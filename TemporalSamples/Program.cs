@@ -123,15 +123,27 @@ AddClientCommand("execute-workflow", "Execute workflow", async (client, workflow
 // });
 
 // Command to signal workflow
-AddClientCommand("signal-suborder-dispatched", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
+
+AddClientCommand("signal-suborder-approve", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
 {
-    Console.WriteLine("Sending dispatched signal to child workflow");
+    Console.WriteLine("Sending approve signal to child workflow");
 
     var workflowId = ctx.ParseResult.GetValueForOption(workflowIdOption) ?? "";
     Console.WriteLine(workflowId);
     var handle = client.GetWorkflowHandle(workflowId);
 
-    await handle.SignalAsync<SuborderChildWorkflow>(wf => wf.Dispatch());
+    await handle.SignalAsync<SuborderChildWorkflow>(wf => wf.OrderApprove());
+});
+
+AddClientCommand("signal-suborder-deny", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
+{
+    Console.WriteLine("Sending deny signal to child workflow");
+
+    var workflowId = ctx.ParseResult.GetValueForOption(workflowIdOption) ?? "";
+    Console.WriteLine(workflowId);
+    var handle = client.GetWorkflowHandle(workflowId);
+
+    await handle.SignalAsync<SuborderChildWorkflow>(wf => wf.OrderDeny());
 });
 
 // Add a new standalone command named 'scratch'
