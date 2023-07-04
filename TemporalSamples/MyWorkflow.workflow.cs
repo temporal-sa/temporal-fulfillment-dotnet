@@ -64,7 +64,7 @@ public class MyWorkflow
                             // Console.WriteLine(t.Exception.ToString());
                             subOrders[childWorkflowId].State = "FAILED";
                             requestCancel = true;
-                            return SetStatus("FAILED");
+                            return "FAILED";
                         }
                         else
                         {
@@ -96,7 +96,8 @@ public class MyWorkflow
             // send rollbacks to children
             await RollbackSubOrders();
             await childResultsTask; // wait for workflows to rollback
-            return SetStatus("ROLLBACK");
+            SetStatus("ROLLBACK");
+            throw new ApplicationFailureException("Order rolled back, see suborders for details");
         }
 
     }
