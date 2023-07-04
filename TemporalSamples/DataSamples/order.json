@@ -10,7 +10,7 @@
         "street": "123 Main St",
         "city": "Marrickville",
         "state": "NSW",
-        "postalCode": "2204",
+        "postalCode": "2204"
     },
     "orderDetails": {
         "totalCost": 75.50,
@@ -38,6 +38,6 @@
             }
         ],
         "subtotal": 18.50,
-        "shipping": 5.15,
+        "shipping": 5.15
     }
 }

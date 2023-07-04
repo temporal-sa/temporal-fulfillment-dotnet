@@ -1,6 +1,7 @@
 namespace TemporalioSamples.ActivitySimple;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using Temporalio.Api.History.V1;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
@@ -8,50 +9,33 @@ using Temporalio.Workflows;
 [Workflow]
 public class MyWorkflow
 {
-    private List<List<int>> currentResults = new List<List<int>>();
+    private List<string> currentResults = new List<string>();
     private bool halted = false;
 
     [WorkflowRun]
-    public async Task<List<int>[]> RunAsync(Order order)
+    public async Task<List<string>> RunAsync(Order order)
     {
+        var workflowId = Workflow.Info.WorkflowID;
+        Console.WriteLine($"Running Workflow ID: {workflowId}");
 
-        // Run an async instance method activity.
-        var result1 = await Workflow.ExecuteActivityAsync(
-            (MyActivities act) => act.SelectFromDatabaseAsync("some-db-table"),
+        // Run sub-order allocation
+        var subOrders = await Workflow.ExecuteActivityAsync(
+            () => MyActivities.AllocateToStores(order),
             new()
             {
                 StartToCloseTimeout = TimeSpan.FromMinutes(5),
             });
-        Workflow.Logger.LogInformation("Activity instance method result: {Result}", result1);
-
-        // Run a sync static method activity.
-        var result2 = await Workflow.ExecuteActivityAsync(
-            () => MyActivities.DoStaticThing(),
-            new()
-            {
-                StartToCloseTimeout = TimeSpan.FromMinutes(5),
-            });
-        Workflow.Logger.LogInformation("Activity static method result: {Result}", result2);
-
-        // await Workflow.ExecuteChildWorkflowAsync(
-        // (RandomNumbersChildWorkflow wf) => wf.RunAsync(),
-        // new()
-        // {
-        //     ID = "random-numbers-child-{Guid.NewGuid()}",
-        // });
-        Workflow.Logger.LogInformation("about to run child workflows");
-
-        Workflow.Logger.LogInformation("child workflows complete");
 
         // Container to hold task handles for all workflows
-        var workflowHandles = new List<Task<List<int>>>();
+        var suborderHandles = new List<Task<string>>();
 
         // Start 5 workflows
-        for (var i = 0; i < 5; i++)
+        foreach (var subOrder in subOrders)
         {
-            var childWorkflowId = $"random-numbers-child-{Guid.NewGuid()}";
+            var childWorkflowId = $"{workflowId}-{subOrder.StoreID}";
+            Console.WriteLine($"Starting workflow for suborder {childWorkflowId}");
             var handle = await Workflow.StartChildWorkflowAsync(
-                (RandomNumbersChildWorkflow wf) => wf.RunAsync(),
+                (SuborderChildWorkflow wf) => wf.RunAsync(subOrder),
                 new()
                 {
                     ID = childWorkflowId,
@@ -61,18 +45,18 @@ public class MyWorkflow
             var resultTask = handle.GetResultAsync().ContinueWith(t =>
                     {
                         Console.WriteLine("result is...");
-                        Console.WriteLine(string.Join(", ", t.Result));  // print the result
+                        Console.WriteLine(t.Result);  // print the result
                         currentResults.Add(t.Result);
                         return t.Result;
                     });
 
             // Add this task to the list of tasks to wait on
-            workflowHandles.Add(resultTask);
+            suborderHandles.Add(resultTask);
         }
 
         // Wait for all workflows to complete and gather their results
-        var childResultsTask = Task.WhenAll(workflowHandles);
-        var waitHalted = Workflow.WaitConditionAsync(() => this.halted);
+        var childResultsTask = Task.WhenAll(suborderHandles);
+        var waitHalted = Workflow.WaitConditionAsync(() => halted);
 
         var finishedWorkflow = await Task.WhenAny(childResultsTask, waitHalted);
 
@@ -80,9 +64,10 @@ public class MyWorkflow
         {
             Console.WriteLine("Workflow completed");
             var childResults = childResultsTask.Result;
-            return childResults;
+            return childResults.ToList();
         }
-        else {
+        else
+        {
             Console.WriteLine("Workflow exiting due to halt signal");
             throw new ApplicationFailureException("Exited due to signal");
         }
@@ -103,7 +88,8 @@ public class MyWorkflow
     }
 
     [WorkflowSignal]
-    public async Task HaltSignal() {
+    public async Task HaltSignal()
+    {
         Console.WriteLine("got halt signal");
         this.halted = true;
     }

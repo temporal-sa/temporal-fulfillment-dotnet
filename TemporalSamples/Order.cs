@@ -17,7 +17,7 @@ public class Order
     [JsonProperty("orderDetails")]
     public OrderDetails OrderDetails { get; set; }
 
-    public Order() {}
+    public Order() { }
 
     public Order(string filePath)
     {
@@ -91,4 +91,13 @@ public class Item
 
     [JsonProperty("totalPrice")]
     public decimal TotalPrice { get; set; }
+
+    [JsonProperty("status")]
+    public string Status { get; set; }
+
+    public string ToJsonString()
+    {
+        return JsonConvert.SerializeObject(this, Formatting.Indented);
+    }
+
 }

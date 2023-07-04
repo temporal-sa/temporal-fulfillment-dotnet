@@ -26,6 +26,21 @@ public class MyActivities
         return rand.Next(3, 6);
     }
 
+    [Activity]
+    public static List<SubOrder> AllocateToStores(Order order)
+    {
+        var allocator = new StoreAllocator();
+        var subOrders = allocator.Allocate(order);
+        return subOrders;
+    }
+
+    [Activity]
+    public static bool ValidateOrder(Order order)
+    {
+        Console.WriteLine($"Validating order... {order.OrderId}");
+        return true;
+    }
+
 
     public class MyDatabaseClient
     {

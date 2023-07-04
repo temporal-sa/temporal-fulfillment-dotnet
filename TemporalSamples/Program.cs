@@ -82,8 +82,10 @@ AddClientCommand("run-worker", "Run worker", async (client, workflowIdOption, ct
             AddActivity(activities.SelectFromDatabaseAsync).
             AddActivity(MyActivities.DoStaticThing).
             AddActivity(MyActivities.DoRandomThing).
+            AddActivity(MyActivities.AllocateToStores).
+            AddActivity(MyActivities.ValidateOrder).
             AddWorkflow<MyWorkflow>().
-            AddWorkflow<RandomNumbersChildWorkflow>());
+            AddWorkflow<SuborderChildWorkflow>());
     try
     {
         await worker.ExecuteAsync(tokenSource.Token);
@@ -97,7 +99,7 @@ AddClientCommand("run-worker", "Run worker", async (client, workflowIdOption, ct
 // Command to run workflow
 AddClientCommand("execute-workflow", "Execute workflow", async (client, workflowIdOption, ctx, cancelToken) =>
 {
-    var workflowId = $"random-numbers-workflow-{Guid.NewGuid()}";
+    var workflowId = $"order-{Guid.NewGuid()}";
     Console.WriteLine("Executing workflow");
     Console.WriteLine(workflowId);
     var order = new Order("DataSamples/order.json");
@@ -108,16 +110,28 @@ AddClientCommand("execute-workflow", "Execute workflow", async (client, workflow
 });
 
 // Command to signal workflow
-AddClientCommand("signal-workflow", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
+AddClientCommand("signal-halt", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
 {
-    Console.WriteLine("Sending halt signal to workflow");  
+    Console.WriteLine("Sending halt signal to workflow");
 
     var workflowId = ctx.ParseResult.GetValueForOption(workflowIdOption) ?? "";
-    Console.WriteLine(workflowId);   
+    Console.WriteLine(workflowId);
     var handle = client.GetWorkflowHandle(workflowId);
 
     await handle.SignalAsync<MyWorkflow>(wf => wf.HaltSignal());
 
+});
+
+// Command to signal workflow
+AddClientCommand("signal-child-dispatched", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
+{
+    Console.WriteLine("Sending dispatched signal to child workflow");
+
+    var workflowId = ctx.ParseResult.GetValueForOption(workflowIdOption) ?? "";
+    Console.WriteLine(workflowId);
+    var handle = client.GetWorkflowHandle(workflowId);
+
+    await handle.SignalAsync<SuborderChildWorkflow>(wf => wf.Dispatch());
 });
 
 // Add a new standalone command named 'scratch'
@@ -126,9 +140,15 @@ var scratchCommand = new Command("scratch", "Prints a test statement");
 scratchCommand.SetHandler(
  () =>
     {
-        Console.WriteLine("*** test");
+        Console.WriteLine("*** Allocating order to stores ***");
         var order = new Order("DataSamples/order.json");
-        Console.WriteLine(order.OrderId);
+        var allocator = new StoreAllocator();
+        var subOrders = allocator.Allocate(order);
+
+        foreach (var subOrder in subOrders)
+        {
+            Console.WriteLine(subOrder.ToJsonString());
+        }
     }
 );
 

@@ -1,0 +1,40 @@
+{"subOrders": [
+            {
+                "storeID": "001",
+                "storeName": "Store One",
+                "items": [
+                    {
+                        "productID": "001",
+                        "productName": "Apples",
+                        "quantity": 1,
+                        "unitPrice": 5.00,
+                        "totalPrice": 5.00
+                    },
+                    {
+                        "productID": "002",
+                        "productName": "Orange Juice",
+                        "quantity": 2,
+                        "unitPrice": 3.50,
+                        "totalPrice": 7.00
+                    }
+                ],
+                "subtotal": 12.00,
+                "shipping": 2.15
+            },
+            {
+                "storeID": "002",
+                "storeName": "Store Two",
+                "items": [
+                    {
+                        "productID": "003",
+                        "productName": "Breakfast Cereal",
+                        "quantity": 1,
+                        "unitPrice": 6.50,
+                        "totalPrice": 6.50
+                    }
+                ],
+                "subtotal": 6.50,
+                "shipping": 3.00
+            }
+        ]
+}
