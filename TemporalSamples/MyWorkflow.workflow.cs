@@ -11,7 +11,7 @@ using Temporalio.Workflows;
 public class MyWorkflow
 {
     private Order order;
-    private bool halted = false;
+    private bool requestCancel = false;
     private Dictionary<string, SubOrder> subOrders = new Dictionary<string, SubOrder>();
     // Container to hold task handles for all workflows
     private List<ChildWorkflowHandle> suborderHandles = new List<ChildWorkflowHandle>();
@@ -47,7 +47,7 @@ public class MyWorkflow
 
             // create a dictionary of suborders to track their status
             subOrders[childWorkflowId] = subOrder;
-            
+
             // start suborders as child workflows (in parallel)
             Console.WriteLine($"Starting workflow for suborder {childWorkflowId}");
             var handle = await Workflow.StartChildWorkflowAsync(
@@ -61,10 +61,21 @@ public class MyWorkflow
             var resultTask = handle.GetResultAsync().ContinueWith(t =>
                     {
                         Console.WriteLine("Sub-order result is...");
-                        // TODO use this to roll back the other suborders (signal) then throw failure
-                        Console.WriteLine(t.IsFaulted ? t.Exception.ToString() : "OK");
-                        Console.WriteLine(t.Result);  // print the result
-                        return t.Result;
+                        // roll back the other suborders (signal) then throw failure
+                        if (t.IsFaulted)
+                        {
+                            Console.WriteLine(t.Exception.ToString());
+                            subOrders[childWorkflowId].State = "FAILED";
+                            requestCancel = true;
+                            return "FAILED";
+                        }
+                        else
+                        {
+                            Console.WriteLine(t.Result);  // print the result
+                            subOrders[childWorkflowId].State = t.Result;
+                            return t.Result;
+                        }
+
                     });
 
             // Add this task to the list of tasks to wait on
@@ -74,31 +85,28 @@ public class MyWorkflow
 
         // Wait for all workflows to complete and gather their results
         var childResultsTask = Task.WhenAll(suborderHandleTasks);
-        var waitHalted = Workflow.WaitConditionAsync(() => halted);
+        var waitCancel = Workflow.WaitConditionAsync(() => requestCancel);
 
-        var finishedWorkflow = await Task.WhenAny(childResultsTask, waitHalted);
+        var finishedWorkflow = await Task.WhenAny(childResultsTask, waitCancel);
 
         if (finishedWorkflow == childResultsTask)
         {
             status = "SUBORDERS COMPLETED";
             Console.WriteLine("Workflow completed");
-            var childResults = childResultsTask.Result;
             return "COMPLETED";
         }
         else
         {
-            status = "HALTED";
-            Console.WriteLine("Workflow exiting due to halt signal");
-            // throw new ApplicationFailureException("Exited due to signal");
+            // TODO maybe remove, overcomplicated
+            status = "CANCELLED";
+            Console.WriteLine("Workflow exiting due to halt = true");
+            // 
             // send cancellations to children
-            foreach (var suborderId in GetSubOrderIDs())
-            {
-                await Workflow.GetExternalWorkflowHandle(suborderId).
-                    SignalAsync<SuborderChildWorkflow>(wf => wf.Rollback());
-            }
-            // todo maybe pause here to allow restarts?
-            return "HALTED";
+            await RollbackSubOrders();
+            await childResultsTask; // wait for workflows to rollback
+            return "ROLLBACK";
         }
+
     }
 
     [WorkflowQuery]
@@ -119,11 +127,19 @@ public class MyWorkflow
         return subOrders.Keys.ToList();
     }
 
-    [WorkflowSignal]
-    public async Task HaltSignal()
+    private async Task<bool> RollbackSubOrders()
     {
-        Console.WriteLine("got halt signal, cancelling/compensating child workflows");
-        this.halted = true;
+        foreach (var suborderId in GetSubOrderIDs())
+        {
+            if (subOrders[suborderId].State != "FAILED") // don't roll back a closed workflow
+            {
+                Console.WriteLine($"Sending rollback signal to suborder {suborderId}");
+
+                await Workflow.GetExternalWorkflowHandle(suborderId).
+                    SignalAsync<SuborderChildWorkflow>(wf => wf.Rollback());
+            }
+        }
+        return true;
     }
 
 }

@@ -3,6 +3,7 @@ namespace TemporalioSamples.ActivitySimple;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
 using Microsoft.Extensions.Logging;
+using System.Runtime.InteropServices;
 
 [Workflow]
 public class SuborderChildWorkflow
@@ -25,7 +26,7 @@ public class SuborderChildWorkflow
         var waitRollback = Workflow.WaitConditionAsync(() => rollback);
 
         SetStatus("PICKING");
-        foreach(var item in subOrder.Items)
+        foreach (var item in subOrder.Items)
         {
             await Workflow.DelayAsync(TimeSpan.FromSeconds(2));
             Console.WriteLine($"Picked item {item.ProductName}");
@@ -39,33 +40,36 @@ public class SuborderChildWorkflow
 
         var completedTask = await Task.WhenAny(waitDispatch, waitRollback);
         Console.WriteLine("Waiting for dispatch");
-        if (completedTask==waitDispatch)
+        if (completedTask == waitDispatch)
         {
-            if(await waitDispatch) {
+            if (await waitDispatch)
+            {
                 SetStatus("DISPATCHED");
             }
-            else {
-                return "TIMEOUT REACHED WHILE WAITING FOR DISPATCH";
+            else
+            {
+                throwApplicationError("TIMEOUT REACHED WHILE WAITING FOR DISPATCH");
+                return "ROLLBACK";
             }
         }
         else if (completedTask == waitRollback)
         {
-            RollbackStatus();
+            RunRollback();
+            throwApplicationError("Rollback Requested");
             return "ROLLBACK";
         }
 
         // Wait for signal or timeout in 30 seconds
         Console.WriteLine("Waiting for delivery confirmation");
-        if (await Workflow.WaitConditionAsync(() => delivered, TimeSpan.FromSeconds(3)))
+        if (await Workflow.WaitConditionAsync(() => delivered, TimeSpan.FromSeconds(60)))
         {
             SetStatus("DELIVERED");
         }
         else
         {
-            return "TIMEOUT REACHED WHILE WAITING FOR DELIVERY CONFIRMATION";
+            throwApplicationError("TIMEOUT REACHED WHILE WAITING FOR DELIVERY CONFIRMATION");
+            return "ROLLBACK";
         }
-
-        CancellationTokenSource.CreateLinkedTokenSource(Workflow.CancellationToken);
 
         return status;
     }
@@ -124,14 +128,21 @@ public class SuborderChildWorkflow
         return status;
     }
 
-    private void RollbackStatus()
-{
-    while (statusCompensation.Count > 0)
+    private void RunRollback()
     {
-        string status = statusCompensation[statusCompensation.Count - 1];
-        Console.WriteLine($"Rolling Back: {status}");
-        statusCompensation.RemoveAt(statusCompensation.Count - 1);
+        while (statusCompensation.Count > 0)
+        {
+            string status = statusCompensation[statusCompensation.Count - 1];
+            Console.WriteLine($"Rolling Back: {status}");
+            statusCompensation.RemoveAt(statusCompensation.Count - 1);
+        }
     }
-}
+
+    private void throwApplicationError(string message)
+    {
+        Console.WriteLine($"Throwing Application Error: {message}");
+        RunRollback();
+        throw new ApplicationFailureException(message);
+    }
 
 }
