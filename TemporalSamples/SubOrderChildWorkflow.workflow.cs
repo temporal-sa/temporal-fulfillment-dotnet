@@ -25,20 +25,20 @@ public class SuborderChildWorkflow
         var waitRollback = Workflow.WaitConditionAsync(() => rollback);
 
         // if order over $10 then needs approval
-        if(subOrder.SubTotal >= 10)
+        if (subOrder.SubTotal >= 10)
         {
             // Wait for an approve or deny signal
             // If we get a rollback signal, we'll cancel the wait and start compensating
-            Console.WriteLine($"{id}: Waiting for approval due to order total of ${subOrder.SubTotal}");
+            Log($"Waiting for approval due to order total of ${subOrder.SubTotal}");
             var waitApproval = Workflow.WaitConditionAsync(() => approval, TimeSpan.FromSeconds(30));
             var waitDenial = Workflow.WaitConditionAsync(() => denial);
             var approvedOrRollback = await Workflow.WhenAnyAsync(waitApproval, waitDenial, waitRollback);
 
             if (approvedOrRollback == waitApproval)
             {
-                if(await waitApproval)
+                if (await waitApproval)
                 {
-                    Console.WriteLine($"{id}: SubOrder approved");
+                    Log($"SubOrder approved");
                 }
                 else
                 {
@@ -46,7 +46,7 @@ public class SuborderChildWorkflow
                     ThrowApplicationErrorAndRollback("SubOrder denied due to approval timeout");
                 }
             }
-            else if(approvedOrRollback == waitDenial)
+            else if (approvedOrRollback == waitDenial)
             {
                 ThrowApplicationErrorAndRollback("SubOrder Denied");
             }
@@ -57,21 +57,23 @@ public class SuborderChildWorkflow
         }
 
         SetStatus("PICKING");
-        await Workflow.ExecuteActivityAsync(
+        string ItemPrintout = await Workflow.ExecuteActivityAsync(
         () => MyActivities.PickItems(subOrder, id),
             MyWorkflow.DefaultActivityOptions);
+        Log(ItemPrintout);
         // Simulate picking an order over 30s (can be undone by rollback)
-        var waitDispatch = 
-            await Workflow.WaitConditionAsync(() => rollback, TimeSpan.FromSeconds(30));
-        Console.WriteLine($"{id}: All items picked: Dispatching");
-        await Workflow.DelayAsync(TimeSpan.FromSeconds(2));
+        var waitDispatch =
+            await Workflow.WaitConditionAsync(() => rollback, TimeSpan.FromSeconds(40));
+        Log($"All items picked: Dispatching");
 
         if (waitDispatch) // rollback requested
         {
+            Log($"Got rollback signal, cancelling/compensating this suborder");
             ThrowApplicationErrorAndRollback("Rollback Requested");
         }
         else
         {
+            await Workflow.DelayAsync(TimeSpan.FromSeconds(2));
             await Workflow.ExecuteActivityAsync(
             () => MyActivities.Dispatch(),
                 MyWorkflow.DefaultActivityOptions);
@@ -91,14 +93,14 @@ public class SuborderChildWorkflow
     [WorkflowSignal]
     public async Task OrderApprove()
     {
-        Console.WriteLine($"{id}: SubOrder Approve Signal Received");
+        Log($"SubOrder Approve Signal Received");
         this.approval = true;
     }
 
     [WorkflowSignal]
     public async Task OrderDeny()
     {
-        Console.WriteLine($"{id}: SubOrder Deny Signal Received");
+        Log($"SubOrder Deny Signal Received");
         this.denial = true;
     }
 
@@ -117,22 +119,22 @@ public class SuborderChildWorkflow
     [WorkflowSignal]
     public async Task Rollback()
     {
-        if(status == "ROLLBACK")
+        if (status == "ROLLBACK")
         {
-            Console.WriteLine($"{id}: Already in rollback state, ignoring signal");
+            Log($"Already in rollback state, ignoring signal");
             return;
         }
-        else if(status != "RECEIVED" && status != "PICKING") {
-            Console.WriteLine($"{id}: Can't rollback from status {status}");
+        else if (status != "RECEIVED" && status != "PICKING")
+        {
+            Log($"Can't rollback from status {status}");
             return;
         }
-        Console.WriteLine($"{id}: Got rollback signal, cancelling/compensating this suborder");
         rollback = true;
     }
 
     private string SetStatus(string newStatus)
     {
-        Console.WriteLine($"{id}: Setting status to {newStatus}");
+        Log($"Setting status to {newStatus}");
         status = newStatus;
         statusCompensation.Add(newStatus);
         return status;
@@ -143,7 +145,7 @@ public class SuborderChildWorkflow
         while (statusCompensation.Count > 0)
         {
             string status = statusCompensation[statusCompensation.Count - 1];
-            Console.WriteLine($"{id}: Rolling Back: {status}");
+            Log($"Rolling Back: {status}");
             statusCompensation.RemoveAt(statusCompensation.Count - 1);
         }
         SetStatus("ROLLBACK");
@@ -151,9 +153,29 @@ public class SuborderChildWorkflow
 
     private void ThrowApplicationErrorAndRollback(string message)
     {
-        Console.WriteLine($"{id}: Throwing Application Error: {message}");
+        Log($"Throwing Application Error: {message}");
         RunRollback();
         throw new ApplicationFailureException(message);
     }
+
+    private void Log(string message)
+    {
+        WriteWithColorBasedOnId($"{id}: {message}");
+    }
+
+    // dodgy function to select log color based on last character of workflow id
+    public void WriteWithColorBasedOnId(string message)
+    {
+        Console.ForegroundColor = (global::System.Object)id[^1] switch // ^1 gets the last character in the id
+        {
+            '1' => ConsoleColor.Blue,
+            '2' => ConsoleColor.Green,
+            '3' => ConsoleColor.Red,
+            _ => ConsoleColor.White,
+        };
+        Console.WriteLine(message);
+        Console.ResetColor();
+    }
+
 
 }

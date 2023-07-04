@@ -26,11 +26,11 @@ public class MyWorkflow
         order = orderParam;
 
         // Run sub-order allocation
-        SetStatus("ALLOCATING");;
+        SetStatus("ALLOCATING");
+        await Workflow.DelayAsync(TimeSpan.FromSeconds(4));
         var subOrderList = await Workflow.ExecuteActivityAsync(
             () => MyActivities.AllocateToStores(order),
             DefaultActivityOptions);
-
 
         // Start 5 workflows
         status = SetStatus("STARTING SUBORDERS");

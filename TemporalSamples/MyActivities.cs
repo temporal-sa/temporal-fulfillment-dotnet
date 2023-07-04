@@ -1,6 +1,7 @@
 namespace TemporalioSamples.ActivitySimple;
 
 using Temporalio.Activities;
+using System.Text;
 using System;
 
 public class MyActivities
@@ -16,24 +17,27 @@ public class MyActivities
     [Activity]
     public static string PickItems(SubOrder subOrder, string id)
     {
-        Console.WriteLine($"{id}: *** Items for picking in store {subOrder.StoreID} ***");
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine($"*** Items for picking in store {subOrder.StoreID} ***");
+
         foreach (var item in subOrder.Items)
         {
-            Console.WriteLine($"{id}: - {item.ProductName}");
+            sb.AppendLine($"\t- {item.ProductName}");
         }
-        return "SUCCESS";
+
+        return sb.ToString();
     }
 
     [Activity]
     public static string Dispatch()
     {
-        return "SUCCESS";
+        return "Dispatch Sent";
     }
 
     [Activity]
     public static string ConfirmDelivered()
     {
-        return "SUCCESS";
+        return "Delivery Confirmed";
     }
 
 }

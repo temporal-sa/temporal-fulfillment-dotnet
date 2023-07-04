@@ -18,9 +18,9 @@
             {
                 "productID": "001",
                 "productName": "Apples",
-                "quantity": 1,
-                "unitPrice": 5.00,
-                "totalPrice": 5.00
+                "quantity": 3,
+                "unitPrice": 2.00,
+                "totalPrice": 2.00
             },
             {
                 "productID": "002",

@@ -109,19 +109,6 @@ AddClientCommand("execute-workflow", "Execute workflow", async (client, workflow
 });
 
 // Command to signal workflow
-// AddClientCommand("signal-order-halt", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
-// {
-//     Console.WriteLine("Sending halt signal to workflow");
-
-//     var workflowId = ctx.ParseResult.GetValueForOption(workflowIdOption) ?? "";
-//     Console.WriteLine(workflowId);
-//     var handle = client.GetWorkflowHandle(workflowId);
-
-//     await handle.SignalAsync<MyWorkflow>(wf => wf.HaltSignal());
-
-// });
-
-// Command to signal workflow
 
 AddClientCommand("signal-suborder-approve", "Signal workflow", async (client, workflowIdOption, ctx, cancelToken) =>
 {
