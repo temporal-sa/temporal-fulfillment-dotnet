@@ -9,6 +9,10 @@ public class MyActivities
     [Activity]
     public static List<SubOrder> AllocateToStores(Order order)
     {
+        // if(ActivityExecutionContext.Current.Info.Attempt <= 6)
+        // {
+        //     throw new Exception("intentionally failing activity for 6 attempts");
+        // }
         var allocator = new StoreAllocator();
         var subOrders = allocator.Allocate(order);
         return subOrders;
