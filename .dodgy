@@ -5,3 +5,12 @@ add cmd line object for order json
 
 signalling
 cmd line takes signalling argument in each command even though its optional
+
+can I make code cleaner in functions?
+can I simplify somehow?
+make sure remove anything that doesn't return .state
+make sure I'm handling dicts and handle lists properly (don't dupe)
+
+make a big page of status for all, in svelte? api->svelte?
+    good templating if I return pure json
+    then maybe interactive if time
