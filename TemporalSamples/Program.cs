@@ -78,7 +78,7 @@ AddClientCommand("run-worker", "Run worker", async (client, workflowIdOption, ct
     Console.WriteLine("Running worker");
     using var worker = new TemporalWorker(
         client,
-        new TemporalWorkerOptions(taskQueue: "random-numbers-example").
+        new TemporalWorkerOptions(taskQueue: "fulfillment-example").
             AddActivity(activities.SelectFromDatabaseAsync).
             AddActivity(MyActivities.DoStaticThing).
             AddActivity(MyActivities.DoRandomThing).
@@ -105,7 +105,7 @@ AddClientCommand("execute-workflow", "Execute workflow", async (client, workflow
     var order = new Order("DataSamples/order.json");
     await client.ExecuteWorkflowAsync(
         (MyWorkflow wf) => wf.RunAsync(order),
-        new(id: workflowId, taskQueue: "random-numbers-example"));
+        new(id: workflowId, taskQueue: "fulfillment-example"));
 
 });
 

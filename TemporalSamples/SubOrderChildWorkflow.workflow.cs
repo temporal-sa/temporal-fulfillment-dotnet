@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [Workflow]
 public class SuborderChildWorkflow
 {
-    private SubOrder subOrder;
+    private SubOrder? subOrder;
     private string id = Workflow.Info.WorkflowID;
     private bool approval = false;
     private bool denial = false;
@@ -29,7 +29,7 @@ public class SuborderChildWorkflow
         {
             // Wait for an approve or deny signal
             // If we get a rollback signal, we'll cancel the wait and start compensating
-            Console.WriteLine($"{id}: Waiting for approval");
+            Console.WriteLine($"{id}: Waiting for approval due to order total of ${subOrder.SubTotal}");
             var waitApproval = Workflow.WaitConditionAsync(() => approval, TimeSpan.FromSeconds(30));
             var waitDenial = Workflow.WaitConditionAsync(() => denial);
             var approvedOrRollback = await Workflow.WhenAnyAsync(waitApproval, waitDenial, waitRollback);
@@ -43,7 +43,7 @@ public class SuborderChildWorkflow
                 else
                 {
                     // timer got triggered
-                    ThrowApplicationErrorAndRollback("SubOrder Denied due to timeout");
+                    ThrowApplicationErrorAndRollback("SubOrder Denied due to timeout waiting for approval");
                 }
             }
             else if(approvedOrRollback == waitDenial)
@@ -61,7 +61,7 @@ public class SuborderChildWorkflow
         {
             Console.WriteLine($"{id}: Picking item {item.ProductName}");
         }
-        // Simulate picking an order (can be undone by rollback)
+        // Simulate picking an order over 30s (can be undone by rollback)
         var waitDispatch = 
             await Workflow.WaitConditionAsync(() => rollback, TimeSpan.FromSeconds(30));
         Console.WriteLine($"{id}: All items picked: Dispatching");
