@@ -28,6 +28,11 @@ public class Order
         DeliveryAddress = order.DeliveryAddress;
         OrderDetails = order.OrderDetails;
     }
+
+    public string ToJsonString()
+    {
+        return JsonConvert.SerializeObject(this, Formatting.Indented);
+    }
 }
 
 public class Customer
@@ -43,6 +48,11 @@ public class Customer
 
     [JsonProperty("phone")]
     public string Phone { get; set; }
+
+    public string ToJsonString()
+    {
+        return JsonConvert.SerializeObject(this, Formatting.Indented);
+    }
 }
 
 public class DeliveryAddress
@@ -58,6 +68,11 @@ public class DeliveryAddress
 
     [JsonProperty("postalCode")]
     public string PostalCode { get; set; }
+
+    public string ToJsonString()
+    {
+        return JsonConvert.SerializeObject(this, Formatting.Indented);
+    }
 }
 
 public class OrderDetails
@@ -73,6 +88,11 @@ public class OrderDetails
 
     [JsonProperty("shipping")]
     public decimal Shipping { get; set; }
+
+    public string ToJsonString()
+    {
+        return JsonConvert.SerializeObject(this, Formatting.Indented);
+    }
 }
 
 public class Item

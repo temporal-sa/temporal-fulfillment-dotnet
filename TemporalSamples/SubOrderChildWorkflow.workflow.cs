@@ -7,42 +7,65 @@ using Microsoft.Extensions.Logging;
 [Workflow]
 public class SuborderChildWorkflow
 {
+    private SubOrder subOrder;
     private bool approved = false;
     private bool dispatched = false;
     private bool delivered = false;
+    private bool rollback = false;
     private string status = "RECEIVED";
+    private List<string> statusCompensation = new List<string>();
 
     [WorkflowRun]
-    public async Task<string> RunAsync(SubOrder subOrder)
+    public async Task<string> RunAsync(SubOrder subOrderParam)
     {
+        subOrder = subOrderParam;
         var resultList = new List<int>();
+
+        // Wait for signal or timeout in 30 seconds
+        var waitRollback = Workflow.WaitConditionAsync(() => rollback);
+
+        SetStatus("PICKING");
+        foreach(var item in subOrder.Items)
+        {
+            await Workflow.DelayAsync(TimeSpan.FromSeconds(2));
+            Console.WriteLine($"Picked item {item.ProductName}");
+        }
+        Console.WriteLine("All items picked");
 
         // todo block on this and have business logic
         //var waitApproved = Workflow.WaitConditionAsync(() => this.approved);
 
-        // Wait for signal or timeout in 30 seconds
+        var waitDispatch = Workflow.WaitConditionAsync(() => dispatched, TimeSpan.FromSeconds(30));
+
+        var completedTask = await Task.WhenAny(waitDispatch, waitRollback);
         Console.WriteLine("Waiting for dispatch");
-        if (await Workflow.WaitConditionAsync(() => dispatched, TimeSpan.FromSeconds(30)))
+        if (completedTask==waitDispatch)
         {
-            status = "DISPATCHED";
+            if(await waitDispatch) {
+                SetStatus("DISPATCHED");
+            }
+            else {
+                return "TIMEOUT REACHED WHILE WAITING FOR DISPATCH";
+            }
         }
-        else
+        else if (completedTask == waitRollback)
         {
-            status = "TIMEOUT REACHED WHILE WAITING FOR DISPATCH";
-            return status;
+            RollbackStatus();
+            return "ROLLBACK";
         }
 
         // Wait for signal or timeout in 30 seconds
         Console.WriteLine("Waiting for delivery confirmation");
-        if (await Workflow.WaitConditionAsync(() => delivered, TimeSpan.FromSeconds(30)))
+        if (await Workflow.WaitConditionAsync(() => delivered, TimeSpan.FromSeconds(3)))
         {
-            status = "DELIVERED";
+            SetStatus("DELIVERED");
         }
         else
         {
-            status = "TIMEOUT REACHED WHILE WAITING FOR DELIVERY";
-            return status;
+            return "TIMEOUT REACHED WHILE WAITING FOR DELIVERY CONFIRMATION";
         }
+
+        CancellationTokenSource.CreateLinkedTokenSource(Workflow.CancellationToken);
 
         return status;
     }
@@ -74,5 +97,41 @@ public class SuborderChildWorkflow
         Console.WriteLine("Order Delivered Signal Received");
         this.delivered = true;
     }
+
+    [WorkflowQuery]
+    public string GetStatus()
+    {
+        return status;
+    }
+
+    public string GetSubOrder()
+    {
+        return subOrder.ToJsonString();
+    }
+
+    [WorkflowSignal]
+    public async Task Rollback()
+    {
+        Console.WriteLine("got halt signal, cancelling/compensating child workflows");
+        this.rollback = true;
+    }
+
+    private string SetStatus(string newStatus)
+    {
+        Console.WriteLine($"Setting status to {newStatus}");
+        status = newStatus;
+        statusCompensation.Add(newStatus);
+        return status;
+    }
+
+    private void RollbackStatus()
+{
+    while (statusCompensation.Count > 0)
+    {
+        string status = statusCompensation[statusCompensation.Count - 1];
+        Console.WriteLine($"Rolling Back: {status}");
+        statusCompensation.RemoveAt(statusCompensation.Count - 1);
+    }
+}
 
 }

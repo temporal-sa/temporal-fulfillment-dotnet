@@ -14,6 +14,9 @@ public class SubOrder
     [JsonProperty("items")]
     public List<Item> Items { get; set; }
 
+    [JsonProperty("state")]
+    public string State { get; set; }
+
     public string ToJsonString()
     {
         return JsonConvert.SerializeObject(this, Formatting.Indented);

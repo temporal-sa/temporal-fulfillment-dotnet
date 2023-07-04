@@ -2,6 +2,7 @@ namespace TemporalioSamples.ActivitySimple;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic;
+using Temporalio.Api.Filter.V1;
 using Temporalio.Api.History.V1;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
@@ -9,30 +10,45 @@ using Temporalio.Workflows;
 [Workflow]
 public class MyWorkflow
 {
-    private List<string> currentResults = new List<string>();
+    private Order order;
     private bool halted = false;
+    private Dictionary<string, SubOrder> subOrders = new Dictionary<string, SubOrder>();
+    // Container to hold task handles for all workflows
+    private List<ChildWorkflowHandle> suborderHandles = new List<ChildWorkflowHandle>();
+    private string status = "RECEIVED";
+
 
     [WorkflowRun]
-    public async Task<List<string>> RunAsync(Order order)
+    public async Task<string> RunAsync(Order orderParam)
     {
         var workflowId = Workflow.Info.WorkflowID;
         Console.WriteLine($"Running Workflow ID: {workflowId}");
+        order = orderParam;
 
         // Run sub-order allocation
-        var subOrders = await Workflow.ExecuteActivityAsync(
+        status = "ALLOCATING";
+        var subOrderList = await Workflow.ExecuteActivityAsync(
             () => MyActivities.AllocateToStores(order),
             new()
             {
                 StartToCloseTimeout = TimeSpan.FromMinutes(5),
             });
 
-        // Container to hold task handles for all workflows
-        var suborderHandles = new List<Task<string>>();
 
         // Start 5 workflows
-        foreach (var subOrder in subOrders)
+        status = "STARTING SUBORDERS";
+
+        // so we can wait on them all later
+        var suborderHandleTasks = new List<Task<string>>();
+
+        foreach (var subOrder in subOrderList)
         {
             var childWorkflowId = $"{workflowId}-{subOrder.StoreID}";
+
+            // create a dictionary of suborders to track their status
+            subOrders[childWorkflowId] = subOrder;
+            
+            // start suborders as child workflows (in parallel)
             Console.WriteLine($"Starting workflow for suborder {childWorkflowId}");
             var handle = await Workflow.StartChildWorkflowAsync(
                 (SuborderChildWorkflow wf) => wf.RunAsync(subOrder),
@@ -44,53 +60,70 @@ public class MyWorkflow
             // Create a task that will complete when the workflow is done and return the ID and result together
             var resultTask = handle.GetResultAsync().ContinueWith(t =>
                     {
-                        Console.WriteLine("result is...");
+                        Console.WriteLine("Sub-order result is...");
+                        // TODO use this to roll back the other suborders (signal) then throw failure
+                        Console.WriteLine(t.IsFaulted ? t.Exception.ToString() : "OK");
                         Console.WriteLine(t.Result);  // print the result
-                        currentResults.Add(t.Result);
                         return t.Result;
                     });
 
             // Add this task to the list of tasks to wait on
-            suborderHandles.Add(resultTask);
+            suborderHandleTasks.Add(resultTask);
         }
+        status = "SUBORDERS STARTED";
 
         // Wait for all workflows to complete and gather their results
-        var childResultsTask = Task.WhenAll(suborderHandles);
+        var childResultsTask = Task.WhenAll(suborderHandleTasks);
         var waitHalted = Workflow.WaitConditionAsync(() => halted);
 
         var finishedWorkflow = await Task.WhenAny(childResultsTask, waitHalted);
 
         if (finishedWorkflow == childResultsTask)
         {
+            status = "SUBORDERS COMPLETED";
             Console.WriteLine("Workflow completed");
             var childResults = childResultsTask.Result;
-            return childResults.ToList();
+            return "COMPLETED";
         }
         else
         {
+            status = "HALTED";
             Console.WriteLine("Workflow exiting due to halt signal");
-            throw new ApplicationFailureException("Exited due to signal");
+            // throw new ApplicationFailureException("Exited due to signal");
+            // send cancellations to children
+            foreach (var suborderId in GetSubOrderIDs())
+            {
+                await Workflow.GetExternalWorkflowHandle(suborderId).
+                    SignalAsync<SuborderChildWorkflow>(wf => wf.Rollback());
+            }
+            // todo maybe pause here to allow restarts?
+            return "HALTED";
         }
     }
 
     [WorkflowQuery]
-    public string CurrentResults()
+    public string GetStatus()
     {
-        List<string> resultStrings = new List<string>();
+        return status;
+    }
 
-        foreach (var innerList in currentResults)
-        {
-            string innerListString = "[" + String.Join(", ", innerList) + "]";
-            resultStrings.Add(innerListString);
-        }
+    [WorkflowQuery]
+    public string GetOrder()
+    {
+        return order.ToJsonString();
+    }
 
-        return "[" + String.Join(", ", resultStrings) + "]";
+    [WorkflowQuery]
+    public List<string> GetSubOrderIDs()
+    {
+        return subOrders.Keys.ToList();
     }
 
     [WorkflowSignal]
     public async Task HaltSignal()
     {
-        Console.WriteLine("got halt signal");
+        Console.WriteLine("got halt signal, cancelling/compensating child workflows");
         this.halted = true;
     }
+
 }
