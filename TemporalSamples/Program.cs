@@ -79,11 +79,10 @@ AddClientCommand("run-worker", "Run worker", async (client, workflowIdOption, ct
     using var worker = new TemporalWorker(
         client,
         new TemporalWorkerOptions(taskQueue: "fulfillment-example").
-            AddActivity(activities.SelectFromDatabaseAsync).
-            AddActivity(MyActivities.DoStaticThing).
-            AddActivity(MyActivities.DoRandomThing).
             AddActivity(MyActivities.AllocateToStores).
-            AddActivity(MyActivities.ValidateOrder).
+            AddActivity(MyActivities.PickItems).
+            AddActivity(MyActivities.Dispatch).
+            AddActivity(MyActivities.ConfirmDelivered).
             AddWorkflow<MyWorkflow>().
             AddWorkflow<SuborderChildWorkflow>());
     try

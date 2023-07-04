@@ -16,3 +16,7 @@ make a big page of status for all, in svelte? api->svelte?
     then maybe interactive if time
 
 TODO activities
+    Maybe allocate retry in an activity
+    pickItems(subOrder.Items)
+    dispatch(address)
+    confirmDelivery()

@@ -43,7 +43,7 @@ public class SuborderChildWorkflow
                 else
                 {
                     // timer got triggered
-                    ThrowApplicationErrorAndRollback("SubOrder Denied due to timeout waiting for approval");
+                    ThrowApplicationErrorAndRollback("SubOrder denied due to approval timeout");
                 }
             }
             else if(approvedOrRollback == waitDenial)
@@ -57,14 +57,14 @@ public class SuborderChildWorkflow
         }
 
         SetStatus("PICKING");
-        foreach (var item in subOrder.Items)
-        {
-            Console.WriteLine($"{id}: Picking item {item.ProductName}");
-        }
+        await Workflow.ExecuteActivityAsync(
+        () => MyActivities.PickItems(subOrder, id),
+            MyWorkflow.DefaultActivityOptions);
         // Simulate picking an order over 30s (can be undone by rollback)
         var waitDispatch = 
             await Workflow.WaitConditionAsync(() => rollback, TimeSpan.FromSeconds(30));
         Console.WriteLine($"{id}: All items picked: Dispatching");
+        await Workflow.DelayAsync(TimeSpan.FromSeconds(2));
 
         if (waitDispatch) // rollback requested
         {
@@ -72,11 +72,17 @@ public class SuborderChildWorkflow
         }
         else
         {
+            await Workflow.ExecuteActivityAsync(
+            () => MyActivities.Dispatch(),
+                MyWorkflow.DefaultActivityOptions);
             SetStatus("DISPATCHED");
         }
 
         // Delay by 30 seconds to simulate delivery
         await Workflow.DelayAsync(TimeSpan.FromSeconds(30));
+        await Workflow.ExecuteActivityAsync(
+        () => MyActivities.ConfirmDelivered(),
+            MyWorkflow.DefaultActivityOptions);
         SetStatus("DELIVERED");
 
         return status;
@@ -121,7 +127,7 @@ public class SuborderChildWorkflow
             return;
         }
         Console.WriteLine($"{id}: Got rollback signal, cancelling/compensating this suborder");
-        this.rollback = true;
+        rollback = true;
     }
 
     private string SetStatus(string newStatus)

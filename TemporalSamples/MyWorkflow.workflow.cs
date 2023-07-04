@@ -29,10 +29,7 @@ public class MyWorkflow
         SetStatus("ALLOCATING");;
         var subOrderList = await Workflow.ExecuteActivityAsync(
             () => MyActivities.AllocateToStores(order),
-            new()
-            {
-                StartToCloseTimeout = TimeSpan.FromMinutes(5),
-            });
+            DefaultActivityOptions);
 
 
         // Start 5 workflows
@@ -143,5 +140,11 @@ public class MyWorkflow
         status = newStatus;
         return status;
     }
+
+    // also used in child workflows
+    public static readonly ActivityOptions DefaultActivityOptions = new ActivityOptions
+    {
+        StartToCloseTimeout = TimeSpan.FromMinutes(5),
+    };
 
 }
