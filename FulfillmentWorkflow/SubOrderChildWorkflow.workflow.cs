@@ -29,7 +29,7 @@ public class SuborderChildWorkflow
         {
             // Wait for an approve or deny signal
             // If we get a rollback signal, we'll cancel the wait and start compensating
-            Log($"Waiting for approval due to order total of ${subOrder.SubTotal}");
+            Log($"Waiting for approval due to suborder total of ${subOrder.SubTotal}");
             var waitApproval = Workflow.WaitConditionAsync(() => approval, TimeSpan.FromSeconds(30));
             var waitDenial = Workflow.WaitConditionAsync(() => denial);
             var approvedOrRollback = await Workflow.WhenAnyAsync(waitApproval, waitDenial, waitRollback);
