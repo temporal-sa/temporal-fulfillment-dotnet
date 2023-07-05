@@ -16,11 +16,14 @@ The sample is configured by default to connect to a local Temporal Server runnin
 
 To instead connect to Temporal Cloud, set the following environment variables, replacing them with your own Temporal Cloud credentials:
 
+```
 TEMPORAL_ADDRESS=testnamespace.sdvdw.tmprl.cloud:7233
 TEMPORAL_NAMESPACE=testnamespace.sdvdw
 TEMPORAL_CERT_PATH="/path/to/file.pem"
 TEMPORAL_KEY_PATH="/path/to/file.key"
+```
 
+Run workflows from
 ```
 cd TemporalSamples
 ```
