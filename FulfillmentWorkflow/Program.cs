@@ -3,7 +3,7 @@ using System.CommandLine.Invocation;
 using Microsoft.Extensions.Logging;
 using Temporalio.Client;
 using Temporalio.Worker;
-using TemporalioSamples.ActivitySimple;
+using TemporalioSamples.Fulfillment;
 using Temporalio.Workflows;
 using Temporalio.Api.Enums.V1;
 using Microsoft.Extensions.Configuration;

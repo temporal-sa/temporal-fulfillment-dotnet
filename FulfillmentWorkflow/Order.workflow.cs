@@ -1,4 +1,4 @@
-namespace TemporalioSamples.ActivitySimple;
+namespace TemporalioSamples.Fulfillment;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic;

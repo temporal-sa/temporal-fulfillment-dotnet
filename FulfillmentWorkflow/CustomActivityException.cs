@@ -1,4 +1,4 @@
-﻿namespace TemporalioSamples.ActivitySimple;
+﻿namespace TemporalioSamples.Fulfillment;
 
 public class CustomActivityException : Exception
 {

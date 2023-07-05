@@ -1,4 +1,4 @@
-namespace TemporalioSamples.ActivitySimple;
+namespace TemporalioSamples.Fulfillment;
 
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
