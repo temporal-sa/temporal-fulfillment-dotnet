@@ -1,5 +1,7 @@
 # dotnet boilerplate
 
+![Screenshot of worker running](./screenshot.png)
+
 ### New Project initialization (don't need to run these as they're already in this project)
 ```
 dotnet add package Temporalio --prerelease
