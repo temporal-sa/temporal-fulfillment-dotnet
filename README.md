@@ -11,29 +11,35 @@ dotnet add package Newtonsoft.Json
 ```
 
 ### Run
+
+The sample is configured by default to connect to a local Temporal Server running on localhost:7233.
+
+To instead connect to Temporal Cloud, set the following environment variables, replacing them with your own Temporal Cloud credentials:
+
+TEMPORAL_ADDRESS=testnamespace.sdvdw.tmprl.cloud:7233
+TEMPORAL_NAMESPACE=testnamespace.sdvdw
+TEMPORAL_CERT_PATH="/path/to/file.pem"
+TEMPORAL_KEY_PATH="/path/to/file.key"
+
 ```
 cd TemporalSamples
 ```
 
 First, we have to run a worker. In a separate terminal, run the worker from this directory:
 ```
-    dotnet run run-worker --target-host $TEMPORAL_ADDRESS --namespace $TEMPORAL_NAMESPACE --client-cert $TEMPORAL_CERT_PATH --client-key $TEMPORAL_KEY_PATH
+    dotnet run run-worker
 ```
 This will start a worker. To run against Temporal Cloud, `--target-host` may be something like
 `my-namespace.a1b2c.tmprl.cloud:7233` and `--namespace` may be something like `my-namespace.a1b2c`.
 
 With that running, in a separate terminal execute the workflow from this directory:
 ```
-    dotnet run execute-workflow --target-host $TEMPORAL_ADDRESS --namespace $TEMPORAL_NAMESPACE --client-cert $TEMPORAL_CERT_PATH --client-key $TEMPORAL_KEY_PATH
+    dotnet run execute-workflow
 ```
 
-Get the workflow ID and signal it to prematurely fail the workflow
+Get the suborder's workflow ID and signal it to prematurely fail the workflow
 ```
-dotnet run signal-workflow --target-host $TEMPORAL_ADDRESS --namespace $TEMPORAL_NAMESPACE --client-cert $TEMPORAL_CERT_PATH --client-key $TEMPORAL_KEY_PATH --workflow-id random-numbers-workflow-a9a0239a-7b23-4d6d-93ef-8446e43d3f1b
-```
-
-Run web client ("/" will trigger a workflow execution)
-```
-cd AspNet
-dotnet run
+dotnet run signal-suborder-approve --workflow-id order-9ad64b2d-0920-434d-8f78-e994805a50dd-001
+# or to deny
+dotnet run signal-suborder-deny --workflow-id order-9ad64b2d-0920-434d-8f78-e994805a50dd-001
 ```

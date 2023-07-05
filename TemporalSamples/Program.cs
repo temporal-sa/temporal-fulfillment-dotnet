@@ -6,6 +6,7 @@ using Temporalio.Worker;
 using TemporalioSamples.ActivitySimple;
 using Temporalio.Workflows;
 using Temporalio.Api.Enums.V1;
+using Microsoft.Extensions.Configuration;
 
 var rootCommand = new RootCommand("Client mTLS sample");
 
@@ -19,42 +20,46 @@ void AddClientCommand(
     rootCommand!.AddCommand(cmd);
 
     // Add options
-    var targetHostOption = new Option<string>("--target-host", "Host:port to connect to");
-    targetHostOption.IsRequired = true;
-    var namespaceOption = new Option<string>("--namespace", "Namespace to connect to");
-    namespaceOption.IsRequired = true;
-    var clientCertOption = new Option<FileInfo>("--client-cert", "Client certificate file for auth");
-    clientCertOption.IsRequired = true;
-    var clientKeyOption = new Option<FileInfo>("--client-key", "Client key file for auth");
-    clientKeyOption.IsRequired = true;
+    // var targetHostOption = new Option<string>("--target-host", "Host:port to connect to");
+    // targetHostOption.IsRequired = true;
+    // var namespaceOption = new Option<string>("--namespace", "Namespace to connect to");
+    // namespaceOption.IsRequired = true;
+    // var clientCertOption = new Option<FileInfo>("--client-cert", "Client certificate file for auth");
+    // clientCertOption.IsRequired = true;
+    // var clientKeyOption = new Option<FileInfo>("--client-key", "Client key file for auth");
+    // clientKeyOption.IsRequired = true;
+
+    // Read from environment variables
+    var temporalAddress = Environment.GetEnvironmentVariable("TEMPORAL_ADDRESS") ?? "localhost:7233";
+    var temporalNamespace = Environment.GetEnvironmentVariable("TEMPORAL_NAMESPACE") ?? "default";
+    var temporalCertPath = Environment.GetEnvironmentVariable("TEMPORAL_CERT_PATH");
+    var temporalKeyPath = Environment.GetEnvironmentVariable("TEMPORAL_KEY_PATH");
+
     var workflowIdOption = new Option<string>("--workflow-id", "Workflow Id to signal"); // Add this line
     workflowIdOption.IsRequired = false; // Not required
-    cmd.AddOption(targetHostOption);
-    cmd.AddOption(namespaceOption);
-    cmd.AddOption(clientCertOption);
-    cmd.AddOption(clientKeyOption);
+
     cmd.AddOption(workflowIdOption); // Add this line
 
     // Set handler
     cmd.SetHandler(async ctx =>
     {
         // Create client
-        var client = await TemporalClient.ConnectAsync(
-            new(ctx.ParseResult.GetValueForOption(targetHostOption)!)
+        var clientOptions = new TemporalClientConnectOptions(temporalAddress)
+        {
+            Namespace = temporalNamespace!,
+        };
+
+        if (!string.IsNullOrEmpty(temporalCertPath) && !string.IsNullOrEmpty(temporalKeyPath))
+        {
+            clientOptions.Tls = new()
             {
-                Namespace = ctx.ParseResult.GetValueForOption(namespaceOption)!,
-                // Set TLS options with client certs. Note, more options could
-                // be added here for server CA (i.e. "ServerRootCACert") or SNI
-                // override (i.e. "Domain") for self-hosted environments with
-                // self-signed certificates.
-                Tls = new()
-                {
-                    ClientCert =
-                        File.ReadAllBytes(ctx.ParseResult.GetValueForOption(clientCertOption)!.FullName),
-                    ClientPrivateKey =
-                        File.ReadAllBytes(ctx.ParseResult.GetValueForOption(clientKeyOption)!.FullName),
-                },
-            });
+                ClientCert = File.ReadAllBytes(temporalCertPath),
+                ClientPrivateKey = File.ReadAllBytes(temporalKeyPath),
+            };
+        }
+
+        var client = await TemporalClient.ConnectAsync(clientOptions);
+
         // Run
         await func(client, workflowIdOption, ctx, ctx.GetCancellationToken());
     });
