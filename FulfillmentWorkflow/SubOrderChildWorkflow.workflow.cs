@@ -58,8 +58,8 @@ public class SuborderChildWorkflow
 
         SetStatus("PICKING");
         string ItemPrintout = await Workflow.ExecuteActivityAsync(
-        () => MyActivities.PickItems(subOrder, id),
-            MyWorkflow.DefaultActivityOptions);
+        () => FulfillmentActivities.PickItems(subOrder, id),
+            OrderWorkflow.DefaultActivityOptions);
         Log(ItemPrintout);
         // Simulate picking an order over 30s (can be undone by rollback)
         var waitDispatch =
@@ -75,16 +75,16 @@ public class SuborderChildWorkflow
         {
             await Workflow.DelayAsync(TimeSpan.FromSeconds(2));
             await Workflow.ExecuteActivityAsync(
-            () => MyActivities.Dispatch(),
-                MyWorkflow.DefaultActivityOptions);
+            () => FulfillmentActivities.Dispatch(),
+                OrderWorkflow.DefaultActivityOptions);
             SetStatus("DISPATCHED");
         }
 
         // Delay by 30 seconds to simulate delivery
         await Workflow.DelayAsync(TimeSpan.FromSeconds(30));
         await Workflow.ExecuteActivityAsync(
-        () => MyActivities.ConfirmDelivered(),
-            MyWorkflow.DefaultActivityOptions);
+        () => FulfillmentActivities.ConfirmDelivered(),
+            OrderWorkflow.DefaultActivityOptions);
         SetStatus("DELIVERED");
 
         return status;

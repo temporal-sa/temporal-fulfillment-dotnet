@@ -77,18 +77,18 @@ AddClientCommand("run-worker", "Run worker", async (client, workflowIdOption, ct
     };
 
     // Create an activity instance with some state
-    var activities = new MyActivities();
+    var activities = new FulfillmentActivities();
 
     // Run worker until cancelled
     Console.WriteLine("Running worker");
     using var worker = new TemporalWorker(
         client,
         new TemporalWorkerOptions(taskQueue: "fulfillment-example").
-            AddActivity(MyActivities.AllocateToStores).
-            AddActivity(MyActivities.PickItems).
-            AddActivity(MyActivities.Dispatch).
-            AddActivity(MyActivities.ConfirmDelivered).
-            AddWorkflow<MyWorkflow>().
+            AddActivity(FulfillmentActivities.AllocateToStores).
+            AddActivity(FulfillmentActivities.PickItems).
+            AddActivity(FulfillmentActivities.Dispatch).
+            AddActivity(FulfillmentActivities.ConfirmDelivered).
+            AddWorkflow<OrderWorkflow>().
             AddWorkflow<SuborderChildWorkflow>());
     try
     {
@@ -108,7 +108,7 @@ AddClientCommand("execute-workflow", "Execute workflow", async (client, workflow
     Console.WriteLine(workflowId);
     var order = new Order("DataSamples/order.json");
     await client.ExecuteWorkflowAsync(
-        (MyWorkflow wf) => wf.RunAsync(order),
+        (OrderWorkflow wf) => wf.RunAsync(order),
         new(id: workflowId, taskQueue: "fulfillment-example"));
 
 });

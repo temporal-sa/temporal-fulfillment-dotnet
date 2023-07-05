@@ -8,7 +8,7 @@ using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
 [Workflow]
-public class MyWorkflow
+public class OrderWorkflow
 {
     private Order order;
     private bool requestCancel = false;
@@ -29,7 +29,7 @@ public class MyWorkflow
         SetStatus("ALLOCATING");
         await Workflow.DelayAsync(TimeSpan.FromSeconds(4));
         var subOrderList = await Workflow.ExecuteActivityAsync(
-            () => MyActivities.AllocateToStores(order),
+            () => FulfillmentActivities.AllocateToStores(order),
             DefaultActivityOptions);
 
         // Start 5 workflows

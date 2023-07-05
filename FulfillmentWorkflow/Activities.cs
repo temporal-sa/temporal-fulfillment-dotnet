@@ -4,7 +4,7 @@ using Temporalio.Activities;
 using System.Text;
 using System;
 
-public class MyActivities
+public class FulfillmentActivities
 {
     [Activity]
     public static List<SubOrder> AllocateToStores(Order order)

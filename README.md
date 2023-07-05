@@ -27,7 +27,7 @@ TEMPORAL_KEY_PATH="/path/to/file.key"
 
 Run workflows from
 ```
-cd TemporalSamples
+cd FulfillmentWorkflow
 ```
 
 First, we have to run a worker. In a separate terminal, run the worker from this directory:
