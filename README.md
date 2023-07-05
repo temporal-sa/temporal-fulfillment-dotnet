@@ -30,14 +30,14 @@ cd TemporalSamples
 
 First, we have to run a worker. In a separate terminal, run the worker from this directory:
 ```
-    dotnet run run-worker
+dotnet run run-worker
 ```
 This will start a worker. To run against Temporal Cloud, `--target-host` may be something like
 `my-namespace.a1b2c.tmprl.cloud:7233` and `--namespace` may be something like `my-namespace.a1b2c`.
 
 With that running, in a separate terminal execute the workflow from this directory:
 ```
-    dotnet run execute-workflow
+dotnet run execute-workflow
 ```
 
 Get the suborder's workflow ID and signal it to prematurely fail the workflow
