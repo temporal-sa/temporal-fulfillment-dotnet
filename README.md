@@ -2,15 +2,12 @@
 
 ![Screenshot of worker running](./screenshot.png)
 
-### New Project initialization (don't need to run these as they're already in this project)
-```
-dotnet add package Temporalio --prerelease
-dotnet add package Microsoft.Extensions.Logging --version 7.0.0
-dotnet add package Microsoft.Extensions.Logging.Console --version 7.0.0
-dotnet add package Microsoft.VisualStudio.Threading.Analyzers --version 17.4.33
-dotnet add package System.CommandLine --prerelease
-dotnet add package Newtonsoft.Json
-```
+### Business Logic
+* Order is split into SubOrders then sent to stores for fulfillment
+* If an Order can’t be fulfilled by a store, then the workflow will try and roll back the entire order (all suborders)
+* Suborders over a set $ amount must explicitly be approved by the store
+    * Otherwise compensations are run
+
 
 ### Run
 
