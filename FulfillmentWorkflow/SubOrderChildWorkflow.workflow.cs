@@ -24,8 +24,8 @@ public class SuborderChildWorkflow
 
         var waitRollback = Workflow.WaitConditionAsync(() => rollback);
 
-        // if order over $10 then needs approval
-        if (subOrder.SubTotal >= 10)
+        // if order over $500 needs approval
+        if (subOrder.SubTotal >= 500)
         {
             // Wait for an approve or deny signal
             // If we get a rollback signal, we'll cancel the wait and start compensating

@@ -83,9 +83,6 @@ public class OrderDetails
     [JsonProperty("items")]
     public List<Item> Items { get; set; }
 
-    [JsonProperty("subtotal")]
-    public decimal Subtotal { get; set; }
-
     [JsonProperty("shipping")]
     public decimal Shipping { get; set; }
 
@@ -108,12 +105,6 @@ public class Item
 
     [JsonProperty("unitPrice")]
     public decimal UnitPrice { get; set; }
-
-    [JsonProperty("totalPrice")]
-    public decimal TotalPrice { get; set; }
-
-    [JsonProperty("status")]
-    public string Status { get; set; }
 
     public string ToJsonString()
     {

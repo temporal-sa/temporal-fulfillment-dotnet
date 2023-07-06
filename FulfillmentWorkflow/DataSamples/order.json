@@ -13,31 +13,38 @@
         "postalCode": "2204"
     },
     "orderDetails": {
-        "totalCost": 75.50,
         "items": [
             {
                 "productID": "001",
                 "productName": "Apples",
-                "quantity": 3,
-                "unitPrice": 2.00,
-                "totalPrice": 2.00
+                "quantity": 2,
+                "unitPrice": 1.00
             },
             {
                 "productID": "002",
-                "productName": "Orange Juice",
-                "quantity": 2,
-                "unitPrice": 3.50,
-                "totalPrice": 7.00
+                "productName": "Breakfast Cereal",
+                "quantity": 1,
+                "unitPrice": 6.50
             },
             {
                 "productID": "003",
-                "productName": "Breakfast Cereal",
+                "productName": "Orange Juice",
+                "quantity": 2,
+                "unitPrice": 9.50
+            },
+            {
+                "productID": "004",
+                "productName": "Bread",
                 "quantity": 1,
-                "unitPrice": 6.50,
-                "totalPrice": 6.50
+                "unitPrice": 7.20
+            },
+            {
+                "productID": "005",
+                "productName": "Milk",
+                "quantity": 1,
+                "unitPrice": 2.00
             }
         ],
-        "subtotal": 18.50,
         "shipping": 5.15
     }
 }
