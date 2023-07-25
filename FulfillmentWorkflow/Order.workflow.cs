@@ -21,7 +21,7 @@ public class OrderWorkflow
     [WorkflowRun]
     public async Task<string> RunAsync(Order orderParam)
     {
-        var workflowId = Workflow.Info.WorkflowID;
+        var workflowId = Workflow.Info.WorkflowId;
         Console.WriteLine($"Running Workflow ID: {workflowId}");
         order = orderParam;
 
@@ -51,7 +51,7 @@ public class OrderWorkflow
                 (SuborderChildWorkflow wf) => wf.RunAsync(subOrder),
                 new()
                 {
-                    ID = childWorkflowId,
+                    Id = childWorkflowId,
                 });
 
             // Create a task that will complete when the subworkflow

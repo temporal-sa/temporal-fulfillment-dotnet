@@ -100,6 +100,42 @@ AddClientCommand("run-worker", "Run worker", async (client, workflowIdOption, ct
     }
 });
 
+// Command to run worker
+// TODO: dedup with the other worker (only task queue name differs)
+AddClientCommand("run-worker-schedule", "Run worker (schedule)", async (client, workflowIdOption, ctx, cancelToken) =>
+{
+    // Cancellation token cancelled on ctrl+c
+    using var tokenSource = new CancellationTokenSource();
+    Console.CancelKeyPress += (_, eventArgs) =>
+    {
+        tokenSource.Cancel();
+        eventArgs.Cancel = true;
+    };
+
+    // Create an activity instance with some state
+    var activities = new FulfillmentActivities();
+
+    // Run worker until cancelled
+    Console.WriteLine("Running worker");
+    using var worker = new TemporalWorker(
+        client,
+        new TemporalWorkerOptions(taskQueue: "fulfillment-example-schedule").
+            AddActivity(FulfillmentActivities.AllocateToStores).
+            AddActivity(FulfillmentActivities.PickItems).
+            AddActivity(FulfillmentActivities.Dispatch).
+            AddActivity(FulfillmentActivities.ConfirmDelivered).
+            AddWorkflow<OrderWorkflow>().
+            AddWorkflow<SuborderChildWorkflow>());
+    try
+    {
+        await worker.ExecuteAsync(tokenSource.Token);
+    }
+    catch (OperationCanceledException)
+    {
+        Console.WriteLine("Worker cancelled");
+    }
+});
+
 // Command to run workflow
 AddClientCommand("execute-workflow", "Execute workflow", async (client, workflowIdOption, ctx, cancelToken) =>
 {

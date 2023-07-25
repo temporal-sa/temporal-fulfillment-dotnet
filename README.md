@@ -45,3 +45,12 @@ dotnet run signal-suborder-approve --workflow-id order-9ad64b2d-0920-434d-8f78-e
 # or to deny
 dotnet run signal-suborder-deny --workflow-id order-9ad64b2d-0920-434d-8f78-e994805a50dd-001
 ```
+
+Creating schedules:
+```
+# payload contains capitalized attributes (which is what the data class expects)
+temporal schedule create --cron "0/5 * * * *" --workflow-id fulfillment-order --task-queue fulfillment-example-schedule  --workflow-type OrderWorkflow --schedule-id fulfillment-example-schedule-1 --input-file DataSamples/orderSchedulePayload.json
+
+# worker runs on a different task queue
+dotnet run run-worker-schedule
+```

@@ -25,3 +25,5 @@ Absent namespaces e.g. order
 Manual JSON parsing -- replace w/ record and consider using the sample at https://github.com/temporalio/sdk-dotnet/#data-conversion showing how to default to camel case
 
 Enums for statuses
+
+Send cancel instead of rollback signal

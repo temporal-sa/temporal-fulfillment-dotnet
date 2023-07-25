@@ -1,0 +1,51 @@
+{
+  "OrderId": "12345",
+  "Customer": {
+    "FirstName": "John",
+    "LastName": "Doe",
+    "Email": "johndoe@example.com.au",
+    "Phone": "0401555555"
+  },
+  "DeliveryAddress": {
+    "Street": "123 Main St",
+    "City": "Marrickville",
+    "State": "NSW",
+    "PostalCode": "2204"
+  },
+  "OrderDetails": {
+    "TotalCost": 0,
+    "Items": [
+      {
+        "ProductId": "001",
+        "ProductName": "Apples",
+        "Quantity": 2,
+        "UnitPrice": 1
+      },
+      {
+        "ProductId": "002",
+        "ProductName": "Breakfast Cereal",
+        "Quantity": 1,
+        "UnitPrice": 6.5
+      },
+      {
+        "ProductId": "003",
+        "ProductName": "Orange Juice",
+        "Quantity": 2,
+        "UnitPrice": 9.5
+      },
+      {
+        "ProductId": "004",
+        "ProductName": "Bread",
+        "Quantity": 1,
+        "UnitPrice": 7.2
+      },
+      {
+        "ProductId": "005",
+        "ProductName": "Milk",
+        "Quantity": 1,
+        "UnitPrice": 2
+      }
+    ],
+    "Shipping": 5.15
+  }
+}
