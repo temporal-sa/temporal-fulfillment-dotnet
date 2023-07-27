@@ -143,9 +143,21 @@ AddClientCommand("execute-workflow", "Execute workflow", async (client, workflow
     Console.WriteLine("Executing workflow");
     Console.WriteLine(workflowId);
     var order = new Order("DataSamples/order.json");
-    await client.ExecuteWorkflowAsync(
+    var handle = await client.StartWorkflowAsync(
         (OrderWorkflow wf) => wf.RunAsync(order),
         new(id: workflowId, taskQueue: "fulfillment-example"));
+
+    // await client.StartWorkflowAsync(
+    //     (OrderWorkflow wf) => wf.RunAsync(order),
+    //     new(id: workflowId, taskQueue: "fulfillment-example"));
+
+    // Check Temporal server health
+    var healthCheckResponse = await client.Connection.CheckHealthAsync();
+    Console.WriteLine("Healthcheck finished");
+
+    Console.WriteLine(
+    "Result: {0}",
+    await handle.GetResultAsync());
 
 });
 
