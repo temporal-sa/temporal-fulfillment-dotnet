@@ -34,7 +34,7 @@ public class OrderWorkflow
 
         // exception that simulates workflow bug
         if(orderParam.OrderId == "9") {
-            // throw new Exception("Simulating failure for orderId 9");
+            throw new Exception("Simulating failure for orderId 9");
         }
 
         // Start 5 workflows
