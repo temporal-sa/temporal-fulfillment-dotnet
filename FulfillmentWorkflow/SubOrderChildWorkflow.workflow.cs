@@ -30,7 +30,7 @@ public class SuborderChildWorkflow
             // Wait for an approve or deny signal
             // If we get a rollback signal, we'll cancel the wait and start compensating
             Log($"Waiting for approval due to suborder total of ${subOrder.SubTotal}");
-            var waitApproval = Workflow.WaitConditionAsync(() => approval, TimeSpan.FromSeconds(15));
+            var waitApproval = Workflow.WaitConditionAsync(() => approval, TimeSpan.FromSeconds(20));
             var waitDenial = Workflow.WaitConditionAsync(() => denial);
             var approvedOrRollback = await Workflow.WhenAnyAsync(waitApproval, waitDenial, waitRollback);
 
@@ -63,7 +63,7 @@ public class SuborderChildWorkflow
         Log(ItemPrintout);
         // Simulate picking an order over 30s (can be undone by rollback)
         var waitDispatch =
-            await Workflow.WaitConditionAsync(() => rollback, TimeSpan.FromSeconds(40));
+            await Workflow.WaitConditionAsync(() => rollback, TimeSpan.FromSeconds(30));
         Log($"All items picked: Dispatching");
 
         if (waitDispatch) // rollback requested
@@ -80,7 +80,7 @@ public class SuborderChildWorkflow
             SetStatus("DISPATCHED");
         }
 
-        // Delay by 30 seconds to simulate delivery
+        // Delay by 15 seconds to simulate delivery
         await Workflow.DelayAsync(TimeSpan.FromSeconds(15));
         await Workflow.ExecuteActivityAsync(
         () => FulfillmentActivities.ConfirmDelivered(),

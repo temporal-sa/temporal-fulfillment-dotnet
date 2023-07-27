@@ -9,7 +9,7 @@
     * Otherwise compensations are run
 
 
-### Run
+## Running the example
 
 The sample is configured by default to connect to a local Temporal Server running on localhost:7233.
 
@@ -39,16 +39,33 @@ With that running, in a separate terminal execute the workflow from this directo
 dotnet run execute-workflow
 ```
 
-Get the suborder's workflow ID and signal it to prematurely fail the workflow
+### Run a workflow that requires human-in-the-loop approval
+
+Suborders over $500 require human approval (via signal) to proceed.
+
+Change quantities of items in `Order.json` to create a large order (e.g. 200 orange juices). Execute the workflow per instructions above.
+
+Get the suborder's workflow ID and signal it to approve the workflow
 ```
 dotnet run signal-suborder-approve --workflow-id order-9ad64b2d-0920-434d-8f78-e994805a50dd-001
-# or to deny
-dotnet run signal-suborder-deny --workflow-id order-9ad64b2d-0920-434d-8f78-e994805a50dd-001
 ```
+This must be done within 20 seconds or all child workflows are rolled back (and all workflows return as failed).
 
-Creating schedules:
+### Run a workflow that simulates a code bug
+
+In `Order.json` change the order ID to 9. This will make the main workflow throw an exception, suspending the workflow execution.
+
+Comment out the exception code in `Order.workflow.cs`, stop the worker then start it again. The workflow will pick up and proceed without issue (as the 'bug' has been fixed).
+
+### Run a workflow that simulates activity retries
+
+In `Activities.cs` comment out the `if(ActivityExecutionContext.Current.Info.Attempt <= 6)` code block (stop and re-run the worker).
+
+This activity will now fail until the 6th time Temporal attempts to execute it. Attempt 6 will succeed and the workflow will proceeed as normal.
+
+### Creating schedules:
 ```
-# payload contains capitalized attributes (which is what the data class expects)
+# Using a different json file to usual as the payload contains capitalized attributes (which is what the data class expects)
 temporal schedule create --cron "0/5 * * * *" --workflow-id fulfillment-order --task-queue fulfillment-example-schedule  --workflow-type OrderWorkflow --schedule-id fulfillment-example-schedule-1 --input-file DataSamples/orderSchedulePayload.json
 
 # worker runs on a different task queue
