@@ -143,7 +143,7 @@ AddClientCommand("execute-workflow", "Execute workflow", async (client, workflow
     Console.WriteLine("Executing workflow");
     Console.WriteLine(workflowId);
     var order = new Order("DataSamples/order.json");
-    await client.ExecuteWorkflowAsync(
+    await client.StartWorkflowAsync(
         (OrderWorkflow wf) => wf.RunAsync(order),
         new(id: workflowId, taskQueue: "fulfillment-example"));
 
