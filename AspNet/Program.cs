@@ -2,6 +2,7 @@ using Temporalio.Client;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 using TemporalioSamples.Fulfillment;
+using Temporalio.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,32 +18,23 @@ var temporalKeyPath = configuration["TEMPORAL_KEY_PATH"];
 // Setup console logging
 builder.Logging.AddSimpleConsole().SetMinimumLevel(LogLevel.Information);
 
-// Set a singleton for the client _task_. Errors will not happen here, only when
-// the await is performed.
-builder.Services.AddSingleton(ctx =>
-    // Create client
-        TemporalClient.ConnectAsync(
-            new(temporalAddress)
-            {
-                Namespace = temporalNamespace!,
-                // Set TLS options with client certs. Note, more options could
-                // be added here for server CA (i.e. "ServerRootCACert") or SNI
-                // override (i.e. "Domain") for self-hosted environments with
-                // self-signed certificates.
-                Tls = new()
+builder.Services.AddTemporalClient(x =>
+{
+    x.TargetHost = temporalAddress;
+    x.Namespace = temporalNamespace;
+    x.Tls = new()
                 {
                     ClientCert =
                         File.ReadAllBytes(temporalCertPath),
                     ClientPrivateKey =
                         File.ReadAllBytes(temporalKeyPath),
-                },
-            }));
+                };
+});
 
 var app = builder.Build();
 
-app.MapGet("/", async (Task<TemporalClient> clientTask, string? name) =>
+app.MapGet("/", async (ITemporalClient client) =>
 {
-    var client = await clientTask;
     var order = new Order("../FulfillmentWorkflow/DataSamples/order.json");
 
     return await client.StartWorkflowAsync(
