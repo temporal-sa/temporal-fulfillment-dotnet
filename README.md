@@ -2,6 +2,16 @@
 
 ![Screenshot of worker running](./screenshot.png)
 
+## Prerequisites
+Install dotnet sdk to get the latest version, and then add the 7.0 sdk. Hat tip to this [git repository](https://github.com/isen-ng/homebrew-dotnet-sdk-versions)
+
+```
+brew install --cask dotnet-sdk
+brew tap isen-ng/dotnet-sdk-versions
+brew install --cask dotnet-sdk7-0-400
+dotnet --list-sdks
+```
+
 ### Business Logic
 * Order is split into SubOrders then sent to stores for fulfillment
 * If an Order can’t be fulfilled by a store, then the workflow will try and roll back the entire order (all suborders)
@@ -31,12 +41,25 @@ First, we have to run a worker. In a separate terminal, run the worker from this
 ```
 dotnet run run-worker
 ```
+
+or you can run a helper bash script to check that you have the envrionment variables set
+
+```
+./startworker.sh
+```
+
 This will start a worker. To run against Temporal Cloud, `--target-host` may be something like
 `my-namespace.a1b2c.tmprl.cloud:7233` and `--namespace` may be something like `my-namespace.a1b2c`.
 
 With that running, in a separate terminal execute the workflow from this directory:
 ```
 dotnet run execute-workflow
+```
+
+or you can run a helper bash script to check that you have the envrionment variables set:
+
+```
+./runworkflow.sh
 ```
 
 ### Run a workflow that requires human-in-the-loop approval
